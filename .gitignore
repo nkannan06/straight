@@ -1,0 +1,22 @@
+# Node
+node_modules/
+**/node_modules/
+
+# Build output
+dist/
+**/dist/
+
+# Environment variables
+.env
+.env.*
+
+# macOS
+.DS_Store
+
+# Logs
+*.log
+
+# SQLite database
+server/straight.db
+server/straight.db-shm
+server/straight.db-wal

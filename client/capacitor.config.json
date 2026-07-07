@@ -1,0 +1,13 @@
+{
+  "appId": "com.straightpoker.app",
+  "appName": "Straight",
+  "webDir": "dist",
+  "ios": {
+    "contentInset": "always"
+  },
+  "plugins": {
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

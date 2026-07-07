@@ -1,0 +1,17 @@
+{
+  "name": "straight-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch index.js",
+    "start": "node index.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jose": "^6.2.3",
+    "ws": "^8.18.0"
+  }
+}
