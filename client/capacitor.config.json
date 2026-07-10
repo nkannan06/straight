@@ -3,7 +3,7 @@
   "appName": "Straight",
   "webDir": "dist",
   "ios": {
-    "contentInset": "always"
+    "contentInset": "never"
   },
   "plugins": {
     "PushNotifications": {

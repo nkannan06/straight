@@ -2,8 +2,6 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { Table } from '../lib/gameEngine.js';
 import { estimateEquity } from '../lib/equity.js';
 import { decideAction, suggestAction } from '../lib/aiPlayer.js';
-import { generateFeedback } from '../lib/feedback.js';
-import { bestHand, describeHand } from '../lib/handEvaluator.js';
 
 const YOU_ID = 'you';
 const AI_NAMES = ['Devon', 'Alex', 'Sena', 'Reed', 'Mika'];
@@ -41,11 +39,9 @@ export function usePracticeTable({ difficulty, opponentCount, startingStack = 10
   const rerender = useCallback(() => setTick((t) => t + 1), []);
 
   const [nextHandAt, setNextHandAt] = useState(null);
-  const [feedback, setFeedback] = useState(null);
-  const decisionLogRef = useRef([]);
   const aiTimerRef = useRef(null);
   const nextHandTimerRef = useRef(null);
-  const feedbackHandledRef = useRef(false);
+  const handCompleteHandledRef = useRef(false);
 
   const table = tableRef.current;
   const state = table.getState();
@@ -59,31 +55,14 @@ export function usePracticeTable({ difficulty, opponentCount, startingStack = 10
     return estimateEquity({ holeCards: me.holeCards, board: state.community, numOpponents: opponents, iterations: 400 });
   }
 
-  const recordDecisionIfHuman = useCallback((playerId, action, amount) => {
-    if (playerId !== YOU_ID) return;
-    const me = table.seats.find((s) => s && s.id === YOU_ID);
-    if (!me || !me.holeCards) return;
-    const equity = currentEquityForYou();
-    decisionLogRef.current.push({
-      street: table.street,
-      action,
-      amount,
-      equityBefore: equity ? equity.win + equity.tie * 0.5 : 0,
-      toCallBefore: table.currentBet - me.currentBet,
-      potSizeBefore: table.seats.filter(Boolean).reduce((s, p) => s + p.contributed, 0),
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [table]);
-
   const applyHumanAction = useCallback((action, amount = 0) => {
-    recordDecisionIfHuman(YOU_ID, action, amount);
     try {
       table.applyAction(YOU_ID, action, amount);
     } catch {
       // illegal action (shouldn't happen from the UI, which only offers legal moves)
     }
     rerender();
-  }, [table, rerender, recordDecisionIfHuman]);
+  }, [table, rerender]);
 
   // Drive AI turns automatically.
   useEffect(() => {
@@ -123,30 +102,15 @@ export function usePracticeTable({ difficulty, opponentCount, startingStack = 10
     return () => clearTimeout(aiTimerRef.current);
   }, [tick, difficulty, table, rerender]);
 
-  // Generate feedback + auto-advance to the next hand once one completes.
+  // Auto-advance to the next hand once one completes.
   useEffect(() => {
     const s = table.getState();
     if (s.street !== 'hand_complete') {
-      feedbackHandledRef.current = false;
+      handCompleteHandledRef.current = false;
       return undefined;
     }
-    if (feedbackHandledRef.current) return undefined;
-    feedbackHandledRef.current = true;
-
-    const me = s.seats.find((seat) => seat && seat.id === YOU_ID);
-    const myShowdown = s.lastHandResult.showdownHands?.find((h) => h.id === YOU_ID);
-    let handDescription = null;
-    if (myShowdown) handDescription = myShowdown.description;
-    else if (me && me.holeCards && !me.folded) {
-      try {
-        handDescription = describeHand(bestHand([...me.holeCards, ...s.community]).score);
-      } catch {
-        handDescription = null;
-      }
-    }
-    const won = s.lastHandResult.pots.some((p) => p.winnerIds.includes(YOU_ID));
-    setFeedback(generateFeedback(decisionLogRef.current, { handDescription, won }));
-    decisionLogRef.current = [];
+    if (handCompleteHandledRef.current) return undefined;
+    handCompleteHandledRef.current = true;
 
     setNextHandAt(Date.now() + NEXT_HAND_DELAY_MS);
     nextHandTimerRef.current = setTimeout(() => {
@@ -190,7 +154,6 @@ export function usePracticeTable({ difficulty, opponentCount, startingStack = 10
   return {
     state: sanitizeForHuman(state),
     nextHandAt,
-    feedback,
     hint,
     sendAction: applyHumanAction,
   };

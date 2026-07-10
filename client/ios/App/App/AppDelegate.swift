@@ -7,6 +7,16 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // TEMPORARY diagnostic — confirms whether the custom sign-in plugins
+        // actually exist in this build's binary at runtime. Remove once
+        // sign-in is confirmed working. Check Xcode's console after launch.
+        for className in ["AppleSignInPlugin", "GoogleSignInPlugin"] {
+            if let cls = NSClassFromString(className) {
+                print("[DIAGNOSTIC] \(className) FOUND in binary: \(cls)")
+            } else {
+                print("[DIAGNOSTIC] \(className) NOT FOUND in binary — plugin file did not compile in")
+            }
+        }
         // Override point for customization after application launch.
         return true
     }

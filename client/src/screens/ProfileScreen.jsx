@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar } from '../components/Avatar.jsx';
 import { Sheet } from '../components/Sheet.jsx';
+import { Toggle } from '../components/Toggle.jsx';
 import { IconTrophy, IconSpade, IconGem, IconShield, IconBell, IconCrown, IconChevronLeft } from '../components/icons.jsx';
 import { useProfile } from '../hooks/useProfile.js';
 import { useAuth } from '../hooks/useAuth.jsx';
@@ -102,18 +103,7 @@ function SettingsSheet({ open, onClose, profile, auth }) {
       <UsernameField profile={profile} auth={auth} />
       <div className="flex items-center justify-between">
         <span className="font-sans text-body text-text-primary">Haptics</span>
-        <button
-          type="button"
-          role="switch"
-          aria-checked={profile.haptics}
-          onClick={() => profile.updateProfile({ haptics: !profile.haptics })}
-          className={`relative h-7 w-12 rounded-full transition-colors ${profile.haptics ? 'bg-accent-olive' : 'bg-white/15'}`}
-        >
-          <span
-            className="absolute top-0.5 h-6 w-6 rounded-full bg-ivory transition-transform"
-            style={{ transform: profile.haptics ? 'translateX(22px)' : 'translateX(2px)' }}
-          />
-        </button>
+        <Toggle checked={profile.haptics} onChange={(v) => profile.updateProfile({ haptics: v })} label="Haptics" />
       </div>
     </Sheet>
   );
@@ -147,7 +137,7 @@ export function ProfileScreen() {
   }, [profile.playerId]);
 
   return (
-    <div className="flex h-full flex-col px-5 pt-4">
+    <div className="flex h-full flex-col px-5 safe-top">
       <div className="flex flex-col items-center">
         <button type="button" onClick={() => setSettingsOpen(true)} className="relative">
           <Avatar name={profile.name} initials={profile.initials} color={profile.color} size="lg" />

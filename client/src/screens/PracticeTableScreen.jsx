@@ -2,7 +2,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { TableView } from '../components/TableView.jsx';
 import { HandStrengthMeter } from '../components/HandStrengthMeter.jsx';
 import { SuggestedActionBadge } from '../components/SuggestedActionBadge.jsx';
-import { FeedbackCard } from '../components/FeedbackCard.jsx';
 import { usePracticeTable } from '../hooks/usePracticeTable.js';
 import { formatMoney } from '../lib/money.js';
 
@@ -13,7 +12,7 @@ export function PracticeTableScreen() {
   const location = useLocation();
   const settings = { ...DEFAULTS, ...(location.state || {}) };
 
-  const { state, nextHandAt, feedback, hint, sendAction } = usePracticeTable({
+  const { state, nextHandAt, hint, sendAction } = usePracticeTable({
     difficulty: settings.difficulty,
     opponentCount: settings.opponentCount,
   });
@@ -39,7 +38,6 @@ export function PracticeTableScreen() {
       connectionStatus="open"
       nextHandAt={nextHandAt}
       hintSlot={hintSlot}
-      postHandExtra={<FeedbackCard text={feedback} />}
       showEquityToggle={false}
     />
   );

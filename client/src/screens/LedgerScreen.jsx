@@ -28,7 +28,7 @@ export function LedgerScreen() {
   const uniqueFriendCount = data.friends.length;
 
   return (
-    <div className="flex h-full flex-col px-5 pt-4">
+    <div className="flex h-full flex-col px-5 safe-top">
       <h1 className="mb-3 font-display text-large-title text-text-primary">Ledger</h1>
 
       <div className="rounded-card border border-white/10 bg-bg-elevated px-4 py-5 text-center">

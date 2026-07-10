@@ -18,7 +18,7 @@ export function ToastProvider({ children }) {
   return (
     <ToastContext.Provider value={showToast}>
       {children}
-      <div className="pointer-events-none absolute inset-x-0 top-4 z-[60] flex flex-col items-center gap-2 px-4">
+      <div className="pointer-events-none absolute inset-x-0 safe-top-offset z-[60] flex flex-col items-center gap-2 px-4">
         <AnimatePresence>
           {toasts.map((t) => (
             <motion.div

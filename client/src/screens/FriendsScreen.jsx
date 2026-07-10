@@ -51,7 +51,7 @@ export function FriendsScreen() {
     : friends;
 
   return (
-    <div className="flex h-full flex-col px-5 pt-4">
+    <div className="flex h-full flex-col px-5 safe-top">
       <div className="mb-3 flex items-center justify-between">
         <h1 className="font-display text-large-title text-text-primary">Friends</h1>
         <button

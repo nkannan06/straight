@@ -61,7 +61,7 @@ export function SettleUpScreen() {
   }
 
   return (
-    <div className="flex h-full flex-col px-5 pt-4">
+    <div className="flex h-full flex-col px-5 safe-top">
       <h1 className="font-display text-title text-text-primary">Settle Up</h1>
       <p className="mt-2 font-sans text-body text-text-secondary">{headline} — here's the simplest way for the group to clear up.</p>
 

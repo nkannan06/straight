@@ -41,7 +41,7 @@ export function FriendProfileScreen() {
   const balancePositive = stats.balanceCents > 0;
 
   return (
-    <div className="relative flex h-full flex-col px-5 pt-4">
+    <div className="relative flex h-full flex-col px-5 safe-top">
       <div className="mb-4 flex items-center">
         <button type="button" onClick={() => navigate(-1)} className="p-1 text-text-primary">
           <IconChevronLeft className="h-6 w-6" />

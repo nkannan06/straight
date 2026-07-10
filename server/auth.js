@@ -150,12 +150,19 @@ export function logOut(token) {
   db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
 }
 
+// Sliding expiration: every /api/auth/me call (i.e. every time the app is
+// opened) pushes the session's expiry back out another SESSION_TTL_MS, so an
+// account in regular use never actually hits the expiry — only a genuinely
+// abandoned session (unopened for the full TTL) gets swept.
 export function userForToken(token) {
   if (!token) return null;
+  const ts = now();
   const row = db.prepare(
     `SELECT u.* FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token = ? AND s.expires_at > ?`
-  ).get(token, now());
-  return row ? publicUser(row) : null;
+  ).get(token, ts);
+  if (!row) return null;
+  db.prepare('UPDATE sessions SET expires_at = ? WHERE token = ?').run(ts + SESSION_TTL_MS, token);
+  return publicUser(row);
 }
 
 export function isUsernameAvailable(username, excludeUserId) {

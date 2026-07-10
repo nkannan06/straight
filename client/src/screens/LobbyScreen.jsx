@@ -89,7 +89,7 @@ export function LobbyScreen() {
   const emptySeatCount = state.maxSeats - players.length;
 
   return (
-    <div className="relative flex h-full flex-col px-5 pt-4">
+    <div className="relative flex h-full flex-col px-5 safe-top">
       <div className="mb-2 flex items-center">
         <button type="button" onClick={() => navigate('/')} className="p-1 text-text-primary">
           <IconChevronLeft className="h-6 w-6" />

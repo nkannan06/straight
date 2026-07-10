@@ -50,7 +50,6 @@ export function TableView({
   connectionStatus = 'open',
   nextHandAt,
   hintSlot,
-  postHandExtra,
   showEquityToggle = true,
 }) {
   const [raiseOpen, setRaiseOpen] = useState(false);
@@ -80,9 +79,9 @@ export function TableView({
 
   return (
     <div className="relative flex h-full flex-col">
-      <div className="flex items-center justify-between px-5 pt-4">
+      <div className="flex items-center justify-between px-5 safe-top">
         {onLeave && (
-          <button type="button" onClick={onLeave} aria-label="Leave table" className="absolute left-5 top-4 text-text-primary">
+          <button type="button" onClick={onLeave} aria-label="Leave table" className="absolute left-5 safe-top-offset text-text-primary">
             <IconChevronLeft className="h-5 w-5" />
           </button>
         )}
@@ -91,7 +90,7 @@ export function TableView({
           <p className="font-sans text-[11px] uppercase tracking-[0.1em] text-text-tertiary">{headerSubtitle}</p>
         </div>
         {onOpenMenu && (
-          <button type="button" onClick={onOpenMenu} className="absolute right-5 top-4 text-text-primary">
+          <button type="button" onClick={onOpenMenu} className="absolute right-5 safe-top-offset text-text-primary">
             •••
           </button>
         )}
@@ -176,8 +175,6 @@ export function TableView({
 
         {hintSlot}
       </div>
-
-      {postHandExtra}
 
       {handComplete ? (
         <div className="safe-bottom px-4 pb-4">

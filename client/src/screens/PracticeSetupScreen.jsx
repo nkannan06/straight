@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { IconChevronLeft } from '../components/icons.jsx';
+import { Toggle } from '../components/Toggle.jsx';
 import { DIFFICULTIES } from '../lib/aiPlayer.js';
 
 const DIFFICULTY_KEYS = ['easy', 'medium', 'hard'];
@@ -18,7 +19,7 @@ export function PracticeSetupScreen() {
   }
 
   return (
-    <div className="flex h-full flex-col px-5 pt-4">
+    <div className="flex h-full flex-col px-5 safe-top">
       <div className="mb-2 flex items-center">
         <button type="button" onClick={() => navigate(-1)} className="p-1 text-text-primary">
           <IconChevronLeft className="h-6 w-6" />
@@ -79,36 +80,14 @@ export function PracticeSetupScreen() {
               <p className="font-sans text-body text-text-primary">Show hand strength</p>
               <p className="font-sans text-[12px] text-text-tertiary">Live equity % meter above the action bar</p>
             </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={showHandStrength}
-              onClick={() => setShowHandStrength((v) => !v)}
-              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${showHandStrength ? 'bg-accent-olive' : 'bg-white/15'}`}
-            >
-              <span
-                className="absolute top-0.5 h-6 w-6 rounded-full bg-ivory transition-transform"
-                style={{ transform: showHandStrength ? 'translateX(22px)' : 'translateX(2px)' }}
-              />
-            </button>
+            <Toggle checked={showHandStrength} onChange={setShowHandStrength} label="Show hand strength" />
           </div>
           <div className="flex items-center justify-between rounded-card border border-white/10 px-4 py-3">
             <div>
               <p className="font-sans text-body text-text-primary">Suggest action</p>
               <p className="font-sans text-[12px] text-text-tertiary">A recommended move, clearly labeled as a suggestion</p>
             </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={suggestActionEnabled}
-              onClick={() => setSuggestActionEnabled((v) => !v)}
-              className={`relative h-7 w-12 shrink-0 rounded-full transition-colors ${suggestActionEnabled ? 'bg-accent-olive' : 'bg-white/15'}`}
-            >
-              <span
-                className="absolute top-0.5 h-6 w-6 rounded-full bg-ivory transition-transform"
-                style={{ transform: suggestActionEnabled ? 'translateX(22px)' : 'translateX(2px)' }}
-              />
-            </button>
+            <Toggle checked={suggestActionEnabled} onChange={setSuggestActionEnabled} label="Suggest action" />
           </div>
         </section>
       </div>

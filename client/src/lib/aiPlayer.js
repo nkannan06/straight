@@ -42,6 +42,12 @@ function clamp01(x) {
 
 function sizeBet({ betSizing, potSize, currentBet, minRaise, myCurrentBet, myStack, equity }) {
   const allInTotal = myCurrentBet + myStack;
+  // If the stack can't cover a full legal min-raise, the only legal raise is
+  // an all-in for less — returning anything more here would make the engine
+  // reject the "raise" as illegal (not enough chips), which silently
+  // downgrades an intended shove into a call.
+  if (allInTotal <= currentBet + minRaise) return allInTotal;
+
   let fraction;
   if (betSizing === 'flat') {
     fraction = 0.5;
@@ -92,7 +98,11 @@ export function decideAction({
   const raw = estimateEquity({ holeCards, board, numOpponents, iterations: config.sampleSize });
   const noise = (Math.random() * 2 - 1) * config.noise;
   const equity = clamp01(raw.win + raw.tie * 0.5 + noise);
-  const canRaise = myStack > 0;
+  // A stack too small to even fully call can't legally raise — a "raise" to
+  // an all-in total that doesn't exceed the current bet is rejected by the
+  // engine (raiseTo must exceed currentBet), so that case must fall through
+  // to 'call', which the engine itself clamps to an all-in-for-less.
+  const canRaise = myStack > 0 && myCurrentBet + myStack > currentBet;
 
   if (toCall > 0) {
     const potOdds = toCall / (potSize + toCall);

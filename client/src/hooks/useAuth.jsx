@@ -1,6 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   fetchCurrentUser,
+  getToken,
+  getCachedUser,
+  cacheUser,
   signUpWithEmail,
   logInWithEmail,
   continueWithApple as continueWithAppleRequest,
@@ -13,23 +16,38 @@ import {
 const AuthContext = createContext(null);
 
 function useAuthState() {
-  const [status, setStatus] = useState('loading'); // 'loading' | 'authed' | 'anon'
-  const [user, setUser] = useState(null);
+  const token = getToken();
+  const cached = token ? getCachedUser() : null;
+  // If we have both a token and a cached identity, render as authed
+  // immediately — no loading flicker, no dependency on the network being up
+  // right this second. A background check still runs and can only sign the
+  // user out on a real 401; anything else (offline, a cold-starting host)
+  // just leaves them signed in with what's cached.
+  const [status, setStatus] = useState(token ? (cached ? 'authed' : 'loading') : 'anon');
+  const [user, setUser] = useState(cached);
 
   useEffect(() => {
+    if (!token) return;
     let cancelled = false;
     fetchCurrentUser()
       .then((u) => {
         if (cancelled) return;
+        // u === null here means the server gave a definitive 401 — anything
+        // else (network/server hiccup) throws instead, see the catch below.
         setUser(u);
         setStatus(u ? 'authed' : 'anon');
       })
       .catch(() => {
-        if (!cancelled) setStatus('anon');
+        if (cancelled) return;
+        // Couldn't verify right now. If we already have a cached identity,
+        // stay signed in with it. Only fall back to anon if we never had
+        // anything to show in the first place.
+        if (!cached) setStatus('anon');
       });
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const signUp = useCallback(async (fields) => {
@@ -68,13 +86,21 @@ function useAuthState() {
 
   const claimUsername = useCallback(async (username) => {
     const saved = await claimUsernameRequest(username);
-    setUser((prev) => (prev ? { ...prev, username: saved } : prev));
+    setUser((prev) => {
+      const next = prev ? { ...prev, username: saved } : prev;
+      cacheUser(next);
+      return next;
+    });
     return saved;
   }, []);
 
   const updateDisplayName = useCallback(async (displayName) => {
     const saved = await updateDisplayNameRequest(displayName);
-    setUser((prev) => (prev ? { ...prev, displayName: saved } : prev));
+    setUser((prev) => {
+      const next = prev ? { ...prev, displayName: saved } : prev;
+      cacheUser(next);
+      return next;
+    });
     return saved;
   }, []);
 

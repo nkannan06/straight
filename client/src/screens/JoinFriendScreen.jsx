@@ -82,7 +82,7 @@ export function JoinFriendScreen() {
   }
 
   return (
-    <div className="flex h-full flex-col px-5 pt-4">
+    <div className="flex h-full flex-col px-5 safe-top">
       <button type="button" onClick={() => navigate('/friends', { replace: true })} className="mb-4 p-1 text-text-primary">
         <IconChevronLeft className="h-6 w-6" />
       </button>

@@ -30,6 +30,19 @@
   .safe-bottom {
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
+  /* max() keeps a 1rem floor everywhere the real inset is 0 (older devices,
+     the browser preview) while still growing to clear a notch/Dynamic Island
+     on real hardware — a bare env() alone would let content sit flush
+     against the very top edge wherever the inset happens to be 0. */
+  .safe-top {
+    padding-top: max(1rem, env(safe-area-inset-top, 0px));
+  }
+  /* Same inset, but for absolutely-positioned elements (e.g. header icon
+     buttons flanking a centered title) where `top` is what needs the offset
+     rather than `padding-top`. */
+  .safe-top-offset {
+    top: max(1rem, env(safe-area-inset-top, 0px));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
