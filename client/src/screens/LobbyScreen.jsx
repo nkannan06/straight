@@ -7,6 +7,7 @@ import { ReconnectingOverlay } from '../components/ReconnectingOverlay.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { useProfile, initialsForName, colorForName } from '../hooks/useProfile.js';
 import { useRoomSocket } from '../hooks/useRoomSocket.js';
+import { copyToClipboard } from '../lib/clipboard.js';
 import { formatMoney } from '../lib/money.js';
 
 export function LobbyScreen() {
@@ -47,18 +48,22 @@ export function LobbyScreen() {
     }
   }, [kicked, navigate, showToast]);
 
+  // No deep-link URL here on purpose — window.location.origin resolves to
+  // capacitor://localhost inside the native app (meaningless outside it),
+  // and there's no hosted web build for a /join route to land on even from
+  // a browser. Sharing the plain room code plays to what already works:
+  // typing it into "Join with Code".
   async function handleShare() {
-    const url = `${window.location.origin}/join?code=${code}`;
+    const text = `Join my Straight table — open the app and enter code: ${code}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Join my Straight table', url });
+        await navigator.share({ title: 'Join my Straight table', text });
+        return;
       } catch {
-        // cancelled
+        return; // cancelled
       }
-    } else {
-      await navigator.clipboard.writeText(url);
-      showToast('Invite link copied');
     }
+    showToast((await copyToClipboard(code)) ? 'Code copied' : `Share this code: ${code}`);
   }
 
   if (fatalError && !state) {

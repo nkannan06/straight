@@ -6,6 +6,7 @@ import { useProfile } from '../hooks/useProfile.js';
 import { createRoom } from '../lib/api.js';
 import { parseDollarsToCents, formatMoney } from '../lib/money.js';
 import { BLIND_PRESETS } from '../lib/blindPresets.js';
+import { copyToClipboard } from '../lib/clipboard.js';
 
 const TABLE_SIZES = [2, 4, 6, 8];
 
@@ -29,7 +30,6 @@ export function CreateGameScreen() {
   const blinds = isCustomBlinds ? { small: customSmallCents, big: customBigCents } : BLIND_PRESETS[blindsIdx];
   const bigBlindCount = blinds.big > 0 ? Math.round(stackCents / blinds.big) : 0;
   const canCreate = !isCustomBlinds || customBlindsValid;
-  const inviteUrl = createdCode ? `${window.location.origin}/join?code=${createdCode}` : null;
 
   // Step by 1 big blind at a time so the stepper scales naturally whether
   // you're buying in for $20 at 10c/20c or $2,000 at $5/$10.
@@ -64,24 +64,28 @@ export function CreateGameScreen() {
     }
   }
 
+  // No deep-link URL here on purpose — window.location.origin resolves to
+  // capacitor://localhost inside the native app (meaningless outside it),
+  // and there's no hosted web build for a /join route to land on even from
+  // a browser. Sharing the plain room code plays to what already works:
+  // typing it into "Join with Code".
   async function handleShare() {
-    if (!inviteUrl) return;
+    if (!createdCode) return;
+    const text = `Join my Straight table — open the app and enter code: ${createdCode}`;
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Join my Straight table', url: inviteUrl });
+        await navigator.share({ title: 'Join my Straight table', text });
+        return;
       } catch {
-        // user cancelled share sheet — no-op
+        return; // user cancelled share sheet — no-op
       }
-    } else {
-      await navigator.clipboard.writeText(inviteUrl);
-      showToast('Invite link copied');
     }
+    showToast((await copyToClipboard(createdCode)) ? 'Code copied' : `Share this code: ${createdCode}`);
   }
 
   async function handleCopy() {
-    if (!inviteUrl) return;
-    await navigator.clipboard.writeText(inviteUrl);
-    showToast('Invite link copied');
+    if (!createdCode) return;
+    showToast((await copyToClipboard(createdCode)) ? 'Code copied' : `Share this code: ${createdCode}`);
   }
 
   return (

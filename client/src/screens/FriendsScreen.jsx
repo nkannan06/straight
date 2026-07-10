@@ -160,6 +160,7 @@ export function FriendsScreen() {
         open={addOpen}
         onClose={() => setAddOpen(false)}
         userId={profile.playerId}
+        username={profile.username}
         suggested={suggested}
         onSent={refresh}
       />

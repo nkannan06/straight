@@ -4,6 +4,7 @@ import { Avatar } from './Avatar.jsx';
 import { IconSearch, IconCopy, IconShare } from './icons.jsx';
 import { initialsForName, colorForName } from '../hooks/useProfile.js';
 import { apiGet, apiPost } from '../lib/api.js';
+import { copyToClipboard } from '../lib/clipboard.js';
 import { useToast } from './Toast.jsx';
 
 function ResultRow({ person, onAdd, status }) {
@@ -31,7 +32,7 @@ function ResultRow({ person, onAdd, status }) {
   );
 }
 
-export function AddFriendSheet({ open, onClose, userId, suggested, onSent }) {
+export function AddFriendSheet({ open, onClose, userId, username, suggested, onSent }) {
   const showToast = useToast();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -71,47 +72,21 @@ export function AddFriendSheet({ open, onClose, userId, suggested, onSent }) {
     }
   }
 
-  const shareUrl = `${window.location.origin}/join-friend?ref=${userId}`;
-
-  // navigator.clipboard requires a secure context (HTTPS or localhost) — it's
-  // silently undefined when testing over a plain-HTTP LAN address (e.g. from
-  // a phone during dev), so this falls back to the older execCommand copy,
-  // which works everywhere a text selection does.
-  function legacyCopy(text) {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    textarea.style.position = 'fixed';
-    textarea.style.opacity = '0';
-    document.body.appendChild(textarea);
-    textarea.focus();
-    textarea.select();
-    let ok = false;
-    try {
-      ok = document.execCommand('copy');
-    } catch {
-      ok = false;
-    }
-    document.body.removeChild(textarea);
-    return ok;
-  }
+  // No deep-link URL here on purpose — window.location.origin resolves to
+  // capacitor://localhost inside the native app (meaningless outside it),
+  // and there's no hosted web build for a /join-friend route to land on
+  // even from a browser. Sharing the plain username plays to what already
+  // works: the search box above resolves it to a real add-friend request.
+  const shareText = username ? `Add me on Straight — search for @${username} in the app.` : '';
 
   async function handleCopyLink() {
-    try {
-      if (navigator.clipboard) {
-        await navigator.clipboard.writeText(shareUrl);
-        showToast('Link copied');
-        return;
-      }
-    } catch {
-      // fall through to legacy copy
-    }
-    showToast(legacyCopy(shareUrl) ? 'Link copied' : "Couldn't copy — long-press the link above to copy it");
+    showToast((await copyToClipboard(shareText)) ? 'Copied' : "Couldn't copy — long-press the text above to copy it");
   }
 
   async function handleShareLink() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Add me on Straight', url: shareUrl });
+        await navigator.share({ title: 'Add me on Straight', text: shareText });
       } catch {
         // cancelled
       }
@@ -140,18 +115,20 @@ export function AddFriendSheet({ open, onClose, userId, suggested, onSent }) {
         </div>
       )}
 
-      <div className="mt-2">
-        <p className="mb-2 font-sans text-caption uppercase tracking-[0.06em] text-text-tertiary">Share your link</p>
-        <div className="flex items-center gap-2 rounded-btn border border-white/15 bg-bg-elevated-2 px-3 py-2.5">
-          <span className="flex-1 truncate font-sans text-[13px] text-text-secondary">{shareUrl}</span>
-          <button type="button" onClick={handleCopyLink} aria-label="Copy link" className="text-accent-gold">
-            <IconCopy className="h-4 w-4" />
-          </button>
-          <button type="button" onClick={handleShareLink} className="rounded-chip bg-accent-gold p-1.5 text-text-on-ivory" aria-label="Share link">
-            <IconShare className="h-4 w-4" />
-          </button>
+      {username && (
+        <div className="mt-2">
+          <p className="mb-2 font-sans text-caption uppercase tracking-[0.06em] text-text-tertiary">Share your username</p>
+          <div className="flex items-center gap-2 rounded-btn border border-white/15 bg-bg-elevated-2 px-3 py-2.5">
+            <span className="flex-1 truncate font-sans text-[13px] text-text-secondary">@{username}</span>
+            <button type="button" onClick={handleCopyLink} aria-label="Copy" className="text-accent-gold">
+              <IconCopy className="h-4 w-4" />
+            </button>
+            <button type="button" onClick={handleShareLink} className="rounded-chip bg-accent-gold p-1.5 text-text-on-ivory" aria-label="Share">
+              <IconShare className="h-4 w-4" />
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {suggested.length > 0 && (
         <div className="mt-5">
