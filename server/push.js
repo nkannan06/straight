@@ -119,14 +119,6 @@ export function unregisterDeviceToken(token) {
   db.prepare('DELETE FROM device_tokens WHERE token = ?').run(token);
 }
 
-export function registeredTokensFor(userId) {
-  return db.prepare('SELECT token, platform FROM device_tokens WHERE user_id = ?').all(userId);
-}
-
-export function isPushConfigured() {
-  return PUSH_CONFIGURED;
-}
-
 export function sendPushNotification(userId, { title, body, data } = {}) {
   const tokens = db.prepare('SELECT token, platform FROM device_tokens WHERE user_id = ?').all(userId);
   if (tokens.length === 0) return;
