@@ -579,6 +579,25 @@ wss.on('connection', (ws) => {
           broadcast(boundRoom);
           break;
         }
+        case 'leave_room': {
+          // Unlike a plain disconnect (which only marks connected=false so a
+          // dropped connection can reconnect into the same seat), leaving is
+          // a deliberate exit: actually free the seat, reassign host if they
+          // were it, and if that empties the table, tear the room down now
+          // instead of waiting for the 30-minute empty-room sweep.
+          const leftCode = boundRoom.code;
+          boundRoom.table.removePlayer(boundPlayerId);
+          boundRoom.clients.delete(boundPlayerId);
+          broadcast(boundRoom);
+          if (boundRoom.table.occupiedSeats().length === 0) {
+            finalizeLedgerSession(boundRoom);
+            if (boundRoom.nextHandTimer) clearTimeout(boundRoom.nextHandTimer);
+            rooms.delete(leftCode);
+          }
+          boundRoom = null;
+          boundPlayerId = null;
+          break;
+        }
         default:
           sendError(ws, `Unknown message type: ${msg.type}`);
       }

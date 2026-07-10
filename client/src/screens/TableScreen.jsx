@@ -7,6 +7,7 @@ import { useToast } from '../components/Toast.jsx';
 import { useProfile } from '../hooks/useProfile.js';
 import { useRoomSocket } from '../hooks/useRoomSocket.js';
 import { formatMoney } from '../lib/money.js';
+import { clearLastRoom } from '../lib/lastRoom.js';
 
 function LeaveConfirmSheet({ open, onClose, onConfirm }) {
   return (
@@ -43,7 +44,7 @@ export function TableScreen() {
   const [hostSheetOpen, setHostSheetOpen] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [fatalError, setFatalError] = useState(null);
-  const { state, status, nextHandAt, error, kicked, clearError, sendAction, hostSetBlinds, hostSetGameOptions, hostResetGame, hostKickPlayer } = socket;
+  const { state, status, nextHandAt, error, kicked, clearError, sendAction, hostSetBlinds, hostSetGameOptions, hostResetGame, hostKickPlayer, leaveRoom } = socket;
 
   useEffect(() => {
     if (!error) return;
@@ -55,6 +56,7 @@ export function TableScreen() {
   useEffect(() => {
     if (kicked) {
       showToast('You were removed from the table');
+      clearLastRoom();
       navigate('/');
     }
   }, [kicked, navigate, showToast]);
@@ -70,7 +72,7 @@ export function TableScreen() {
         <p className="font-sans text-subheadline text-text-secondary">{fatalError}</p>
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => { clearLastRoom(); navigate('/'); }}
           className="mt-2 rounded-btn bg-accent-gold px-6 py-3 font-sans font-semibold text-text-on-ivory"
         >
           Return Home
@@ -119,7 +121,11 @@ export function TableScreen() {
       <LeaveConfirmSheet
         open={leaveConfirmOpen}
         onClose={() => setLeaveConfirmOpen(false)}
-        onConfirm={() => navigate('/')}
+        onConfirm={() => {
+          leaveRoom();
+          clearLastRoom();
+          navigate('/');
+        }}
       />
     </>
   );

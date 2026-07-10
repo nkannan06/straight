@@ -1,5 +1,6 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { SERVER_HTTP_URL } from './config.js';
+import { clearLastRoom } from './lastRoom.js';
 
 // Swappable auth layer: every call in this module goes through the same
 // small set of exports (signUpWithEmail, logInWithEmail, continueWithApple,
@@ -38,7 +39,7 @@ export function cacheUser(user) {
 function setToken(token) {
   if (token) localStorage.setItem(TOKEN_KEY, token);
   else localStorage.removeItem(TOKEN_KEY);
-  localStorage.removeItem('straight.lastRoom');
+  clearLastRoom();
 }
 
 async function postJson(path, body, { auth = false } = {}) {

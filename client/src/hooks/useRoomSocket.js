@@ -88,6 +88,11 @@ export function useRoomSocket({ code, playerId, name }) {
   const hostSetBlinds = useCallback((blinds) => send({ type: 'host_set_blinds', blinds }), [send]);
   const hostSetGameOptions = useCallback((options) => send({ type: 'host_set_game_options', ...options }), [send]);
   const hostKickPlayer = useCallback((targetPlayerId) => send({ type: 'host_kick_player', targetPlayerId }), [send]);
+  // A deliberate exit, not a network drop — tells the server to actually
+  // free the seat (and tear the room down if that empties it) rather than
+  // just marking this connection disconnected and waiting to see if it
+  // reconnects.
+  const leaveRoom = useCallback(() => send({ type: 'leave_room' }), [send]);
 
   return {
     state,
@@ -102,5 +107,6 @@ export function useRoomSocket({ code, playerId, name }) {
     hostSetBlinds,
     hostSetGameOptions,
     hostKickPlayer,
+    leaveRoom,
   };
 }

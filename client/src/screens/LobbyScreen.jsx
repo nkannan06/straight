@@ -9,6 +9,7 @@ import { useProfile, initialsForName, colorForName } from '../hooks/useProfile.j
 import { useRoomSocket } from '../hooks/useRoomSocket.js';
 import { copyToClipboard } from '../lib/clipboard.js';
 import { formatMoney } from '../lib/money.js';
+import { setLastRoom, clearLastRoom } from '../lib/lastRoom.js';
 
 export function LobbyScreen() {
   const { code } = useParams();
@@ -18,7 +19,7 @@ export function LobbyScreen() {
   const socket = useRoomSocket({ code, playerId: profile.playerId, name: profile.name });
   const [hostSheetOpen, setHostSheetOpen] = useState(false);
 
-  const { state, status, error, kicked, clearError, hostStartGame, hostSetBlinds, hostSetGameOptions, hostResetGame, hostKickPlayer } = socket;
+  const { state, status, error, kicked, clearError, hostStartGame, hostSetBlinds, hostSetGameOptions, hostResetGame, hostKickPlayer, leaveRoom } = socket;
   const isHost = state?.hostId === profile.playerId;
   const players = state ? state.seats.filter(Boolean) : [];
   const [fatalError, setFatalError] = useState(null);
@@ -26,9 +27,15 @@ export function LobbyScreen() {
   useEffect(() => {
     if (state) {
       const hostPlayer = state.seats.find((s) => s && s.id === state.hostId);
-      localStorage.setItem('straight.lastRoom', JSON.stringify({ code, name: `${hostPlayer?.name || 'Host'}'s Game` }));
+      setLastRoom(code, `${hostPlayer?.name || 'Host'}'s Game`);
     }
   }, [state, code]);
+
+  function handleLeave() {
+    leaveRoom();
+    clearLastRoom();
+    navigate('/');
+  }
 
   useEffect(() => {
     if (state && state.street !== 'lobby') navigate(`/table/${code}`, { replace: true });
@@ -44,6 +51,7 @@ export function LobbyScreen() {
   useEffect(() => {
     if (kicked) {
       showToast("You were removed from the table");
+      clearLastRoom();
       navigate('/');
     }
   }, [kicked, navigate, showToast]);
@@ -73,7 +81,7 @@ export function LobbyScreen() {
         <p className="font-sans text-subheadline text-text-secondary">{fatalError}</p>
         <button
           type="button"
-          onClick={() => navigate('/')}
+          onClick={() => { clearLastRoom(); navigate('/'); }}
           className="mt-2 rounded-btn bg-accent-gold px-6 py-3 font-sans font-semibold text-text-on-ivory"
         >
           Return Home
@@ -96,7 +104,7 @@ export function LobbyScreen() {
   return (
     <div className="relative flex h-full flex-col px-5 safe-top">
       <div className="mb-2 flex items-center">
-        <button type="button" onClick={() => navigate('/')} className="p-1 text-text-primary">
+        <button type="button" onClick={handleLeave} className="p-1 text-text-primary">
           <IconChevronLeft className="h-6 w-6" />
         </button>
         <h1 className="flex-1 text-center font-display text-title text-text-primary">Lobby</h1>

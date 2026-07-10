@@ -239,6 +239,7 @@ export function TableView({
           onClose={() => setRaiseOpen(false)}
           currentBet={state.currentBet}
           minRaise={state.minRaise}
+          bigBlind={state.blinds.big}
           myCurrentBet={mySeat.currentBet}
           myStack={mySeat.stack}
           potSize={potTotal(state)}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '../hooks/useProfile.js';
 import { useSchedule } from '../hooks/useSchedule.js';
@@ -7,6 +7,8 @@ import { SequenceLogo } from '../components/SequenceLogo.jsx';
 import { Sheet } from '../components/Sheet.jsx';
 import { Toggle } from '../components/Toggle.jsx';
 import { IconCalendar } from '../components/icons.jsx';
+import { getLastRoom, clearLastRoom } from '../lib/lastRoom.js';
+import { fetchRoomPreview } from '../lib/api.js';
 
 function SettingsSheet({ open, onClose, profile }) {
   const [name, setName] = useState(profile.name);
@@ -37,13 +39,31 @@ export function HomeScreen() {
   const { games } = useSchedule(profile.playerId);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const nextGame = games[0] || null;
+  const [lastRoom, setLastRoomState] = useState(() => getLastRoom());
 
-  let lastRoom = null;
-  try {
-    lastRoom = JSON.parse(localStorage.getItem('straight.lastRoom') || 'null');
-  } catch {
-    lastRoom = null;
-  }
+  // The cached "Continue" card is only ever a hint from the last time we
+  // were in a room — leaving, being kicked, or the room simply no longer
+  // existing (host left and it emptied out, 30-min sweep, server restart)
+  // should all make it disappear. Verify against the server rather than
+  // trusting local state indefinitely; a network hiccup just leaves the
+  // card showing rather than punishing the user for a transient error.
+  useEffect(() => {
+    if (!lastRoom) return;
+    let cancelled = false;
+    fetchRoomPreview(lastRoom.code)
+      .then((preview) => {
+        if (cancelled) return;
+        if (!preview.exists) {
+          clearLastRoom();
+          setLastRoomState(null);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="flex h-full flex-col px-5 safe-top">

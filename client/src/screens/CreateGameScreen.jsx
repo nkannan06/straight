@@ -8,6 +8,7 @@ import { createRoom } from '../lib/api.js';
 import { parseDollarsToCents, formatMoney } from '../lib/money.js';
 import { BLIND_PRESETS } from '../lib/blindPresets.js';
 import { copyToClipboard } from '../lib/clipboard.js';
+import { setLastRoom } from '../lib/lastRoom.js';
 
 const TABLE_SIZES = [2, 4, 6, 8];
 
@@ -65,7 +66,7 @@ export function CreateGameScreen() {
         rabbitHuntEnabled,
       });
       setCreatedCode(code);
-      localStorage.setItem('straight.lastRoom', JSON.stringify({ code, name: `${profile.name}'s Game` }));
+      setLastRoom(code, `${profile.name}'s Game`);
     } catch {
       showToast('Could not reach the server. Is it running?');
     } finally {
