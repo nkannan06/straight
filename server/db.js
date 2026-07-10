@@ -1,5 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
+import { existsSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 // node:sqlite is experimental as of Node 22-24 but stable enough for this
@@ -8,6 +9,12 @@ import path from 'node:path';
 // file's exports — callers only use the query helpers below, never the raw
 // DatabaseSync instance.
 const DB_PATH = process.env.STRAIGHT_DB_PATH || path.join(path.dirname(fileURLToPath(import.meta.url)), 'straight.db');
+
+// Logged on every boot so a persistent-storage misconfiguration (wrong path,
+// volume not mounted yet at open time, etc.) is visible in the deploy logs
+// instead of only showing up as "my data disappeared" after the fact.
+const dbAlreadyExisted = existsSync(DB_PATH);
+console.log(`[db] opening ${DB_PATH} (already existed: ${dbAlreadyExisted}${dbAlreadyExisted ? `, ${statSync(DB_PATH).size} bytes` : ''})`);
 
 export const db = new DatabaseSync(DB_PATH);
 db.exec('PRAGMA journal_mode = WAL');
