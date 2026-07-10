@@ -203,7 +203,8 @@ beats what. If you change either file, copy it to the other location too.
   volume (e.g. Railway's Volumes feature), not the default location next to
   the code — most hosts give the server a fresh, empty filesystem on every
   deploy, which would otherwise silently wipe every account, friend,
-  ledger entry, and hand history record on every redeploy.
+  ledger entry, and hand history record on every redeploy (confirmed fixed
+  once `STRAIGHT_DB_PATH` points at the mounted volume).
 - Ledger cash-out for a player who disconnects without the host resetting/
   ending the session falls back to their last-known stack rather than an
   exact "walked away at this exact moment" amount — a reasonable
