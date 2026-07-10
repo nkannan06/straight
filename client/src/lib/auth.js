@@ -69,10 +69,10 @@ export async function continueWithApple() {
     throw new Error('Sign in with Apple only works in the installed iOS app — use email for now.');
   }
   const { identityToken, displayName } = await AppleSignIn.signIn();
-  const { token, user } = await postJson('/api/auth/apple', { identityToken, displayName });
+  const { token, user, isNewUser } = await postJson('/api/auth/apple', { identityToken, displayName });
   setToken(token);
   cacheUser(user);
-  return user;
+  return { user, isNewUser };
 }
 
 export async function continueWithGoogle() {
@@ -80,10 +80,10 @@ export async function continueWithGoogle() {
     throw new Error('Sign in with Google only works in the installed iOS app — use email for now.');
   }
   const { idToken } = await GoogleSignIn.signIn();
-  const { token, user } = await postJson('/api/auth/google', { idToken });
+  const { token, user, isNewUser } = await postJson('/api/auth/google', { idToken });
   setToken(token);
   cacheUser(user);
-  return user;
+  return { user, isNewUser };
 }
 
 export async function logOut() {

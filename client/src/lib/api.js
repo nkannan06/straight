@@ -25,11 +25,11 @@ export async function apiDelete(path) {
   return res.json();
 }
 
-export async function createRoom({ maxSeats, blinds, startingStack }) {
+export async function createRoom({ maxSeats, blinds, startingStack, rabbitHuntEnabled, bounty27Enabled }) {
   const res = await fetch(`${SERVER_HTTP_URL}/api/rooms`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ maxSeats, blinds, startingStack }),
+    body: JSON.stringify({ maxSeats, blinds, startingStack, rabbitHuntEnabled, bounty27Enabled }),
   });
   if (!res.ok) throw new Error('Could not create room');
   return res.json();

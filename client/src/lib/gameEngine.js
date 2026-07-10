@@ -47,16 +47,37 @@ export function computeSidePots(contributions) {
   return merged;
 }
 
+// Checks the classic home-game "2-7 bounty" side rule: exactly a deuce and a
+// seven, different suits. Ranking of the hand they actually made doesn't
+// matter — this is purely about what their two hole cards are.
+export function isTwoSevenOffsuit(holeCards) {
+  if (!holeCards || holeCards.length !== 2) return false;
+  const ranks = [holeCards[0].rank, holeCards[1].rank].sort();
+  return ranks[0] === '2' && ranks[1] === '7' && holeCards[0].suit !== holeCards[1].suit;
+}
+
 export class IllegalActionError extends Error {}
 
 export class Table {
-  constructor({ code, maxSeats = 8, blinds = { small: 1, big: 2 }, startingStack = 1000, turnTimeoutMs = DEFAULT_TURN_TIMEOUT_MS }) {
+  constructor({
+    code,
+    maxSeats = 8,
+    blinds = { small: 1, big: 2 },
+    startingStack = 1000,
+    turnTimeoutMs = DEFAULT_TURN_TIMEOUT_MS,
+    rabbitHuntEnabled = false,
+    bounty27Enabled = false,
+    bounty27Multiplier = 2,
+  }) {
     this.code = code;
     this.maxSeats = maxSeats;
     this.blinds = { ...blinds };
     this.pendingBlinds = null;
     this.startingStack = startingStack;
     this.turnTimeoutMs = turnTimeoutMs;
+    this.rabbitHuntEnabled = rabbitHuntEnabled;
+    this.bounty27Enabled = bounty27Enabled;
+    this.bounty27Multiplier = bounty27Multiplier;
 
     this.seats = new Array(maxSeats).fill(null);
     this.hostId = null;
@@ -147,6 +168,14 @@ export class Table {
 
   setPendingBlinds(blinds) {
     this.pendingBlinds = { ...blinds };
+  }
+
+  // Unlike blinds, these don't affect in-progress betting math, so they take
+  // effect immediately rather than needing a "pending until next hand" step.
+  setGameOptions({ rabbitHuntEnabled, bounty27Enabled, bounty27Multiplier } = {}) {
+    if (rabbitHuntEnabled !== undefined) this.rabbitHuntEnabled = !!rabbitHuntEnabled;
+    if (bounty27Enabled !== undefined) this.bounty27Enabled = !!bounty27Enabled;
+    if (bounty27Multiplier !== undefined) this.bounty27Multiplier = bounty27Multiplier;
   }
 
   canStartHand() {
@@ -462,11 +491,51 @@ export class Table {
     return this.occupiedSeats().map((p) => ({ id: p.id, contributed: p.contributed, folded: p.folded }));
   }
 
+  // Pays out the 2-7 bounty for any winner(s) of this hand holding the
+  // qualifying cards: every other player dealt into the hand pays
+  // blinds.big * bounty27Multiplier to them (capped at what they have left,
+  // so nobody's stack goes negative). Returns null when nothing was paid.
+  applyBounty27(winnerIds) {
+    if (!this.bounty27Enabled) return null;
+    const amount = this.blinds.big * this.bounty27Multiplier;
+    const payouts = [];
+    for (const winnerId of new Set(winnerIds)) {
+      const winner = this.findPlayer(winnerId);
+      if (!winner || !isTwoSevenOffsuit(winner.holeCards)) continue;
+      const payers = this.occupiedSeats().filter((p) => p.dealtIn && p.id !== winnerId);
+      let collected = 0;
+      for (const payer of payers) {
+        const paid = Math.min(amount, payer.stack);
+        payer.stack -= paid;
+        collected += paid;
+      }
+      winner.stack += collected;
+      const payerIds = payers.map((p) => p.id);
+      this.logAction({ type: 'bounty27', winnerId, amount: collected, payerIds });
+      payouts.push({ winnerId, amount: collected, payerIds });
+    }
+    return payouts.length ? payouts : null;
+  }
+
   endHandByFold() {
     const winner = this.nonFoldedPlayers()[0];
     const pots = computeSidePots(this.contributionsSnapshot());
     const totalAwarded = pots.reduce((sum, pot) => sum + pot.amount, 0);
     if (winner) winner.stack += totalAwarded;
+    const bounty27 = winner ? this.applyBounty27([winner.id]) : null;
+
+    // Rabbit hunt: the hand ended before all five community cards were
+    // dealt (folded out on the flop/turn/etc) — reveal what the rest of the
+    // board would have been, drawn from the same already-shuffled deck so
+    // it's the real would-have-been cards, not a fresh random draw. Purely
+    // cosmetic: money was already awarded above based on the actual fold.
+    let rabbitHunt = null;
+    if (this.rabbitHuntEnabled && this.community.length < 5) {
+      const extra = [];
+      while (this.community.length + extra.length < 5 && this.deck.length > 0) extra.push(this.deck.pop());
+      if (extra.length > 0) rabbitHunt = { community: [...this.community, ...extra] };
+    }
+
     this.street = 'hand_complete';
     this.actingSeat = null;
     this.actionDeadline = null;
@@ -476,6 +545,8 @@ export class Table {
       pots: pots.map((pot) => ({ amount: pot.amount, winnerIds: winner ? [winner.id] : [] })),
       totalPot: totalAwarded,
       showdownHands: [],
+      bounty27,
+      rabbitHunt,
     };
     this.logAction({ type: 'hand_complete', winnerIds: winner ? [winner.id] : [], amount: totalAwarded, wonWithoutShowdown: true });
   }
@@ -514,6 +585,8 @@ export class Table {
       awarded.push({ amount: pot.amount, winnerIds: winners.map((w) => w.id) });
     }
 
+    const bounty27 = this.applyBounty27(awarded.flatMap((a) => a.winnerIds));
+
     this.street = 'hand_complete';
     this.actingSeat = null;
     this.actionDeadline = null;
@@ -523,6 +596,8 @@ export class Table {
       pots: awarded,
       totalPot: awarded.reduce((sum, pot) => sum + pot.amount, 0),
       showdownHands: results.map((r) => ({ id: r.id, cards: r.cards, description: r.description })),
+      bounty27,
+      rabbitHunt: null,
     };
     this.logAction({ type: 'hand_complete', winnerIds: awarded.flatMap((a) => a.winnerIds), amount: this.lastHandResult.totalPot, wonWithoutShowdown: false });
   }
@@ -536,6 +611,9 @@ export class Table {
       blinds: this.blinds,
       pendingBlinds: this.pendingBlinds,
       startingStack: this.startingStack,
+      rabbitHuntEnabled: this.rabbitHuntEnabled,
+      bounty27Enabled: this.bounty27Enabled,
+      bounty27Multiplier: this.bounty27Multiplier,
       hostId: this.hostId,
       dealerSeat: this.dealerSeat,
       street: this.street,

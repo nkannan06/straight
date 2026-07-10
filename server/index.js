@@ -94,6 +94,11 @@ function sanitizeForViewer(fullState, viewerId) {
   if (fullState.lastHandResult && !fullState.lastHandResult.wonWithoutShowdown) {
     for (const sh of fullState.lastHandResult.showdownHands) revealedIds.add(sh.id);
   }
+  // A fold-win doesn't normally reveal hole cards, but if it triggered the
+  // 2-7 bounty everyone just paid for, they've earned the right to see it.
+  if (fullState.lastHandResult?.bounty27) {
+    for (const b of fullState.lastHandResult.bounty27) revealedIds.add(b.winnerId);
+  }
   return {
     ...fullState,
     seats: fullState.seats.map((seat) => {
@@ -182,9 +187,15 @@ app.post('/api/rooms', (req, res) => {
   // Amounts are integer cents (see client/src/lib/money.js) — the server
   // itself is unit-agnostic and just does exact integer math either way.
   // Defaults here: $1/$2 blinds, $1,000 starting stack.
-  const { maxSeats = 6, blinds = { small: 100, big: 200 }, startingStack = 100_000 } = req.body || {};
+  const {
+    maxSeats = 6,
+    blinds = { small: 100, big: 200 },
+    startingStack = 100_000,
+    rabbitHuntEnabled = false,
+    bounty27Enabled = false,
+  } = req.body || {};
   const code = generateRoomCode();
-  const room = new Room(code, { maxSeats, blinds, startingStack });
+  const room = new Room(code, { maxSeats, blinds, startingStack, rabbitHuntEnabled, bounty27Enabled });
   rooms.set(code, room);
   res.json({ code });
 });
@@ -548,6 +559,12 @@ wss.on('connection', (ws) => {
         case 'host_set_blinds': {
           if (!requireHost(boundRoom, boundPlayerId, ws)) break;
           boundRoom.table.setPendingBlinds(msg.blinds);
+          broadcast(boundRoom);
+          break;
+        }
+        case 'host_set_game_options': {
+          if (!requireHost(boundRoom, boundPlayerId, ws)) break;
+          boundRoom.table.setGameOptions({ rabbitHuntEnabled: msg.rabbitHuntEnabled, bounty27Enabled: msg.bounty27Enabled });
           broadcast(boundRoom);
           break;
         }

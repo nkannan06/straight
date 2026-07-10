@@ -43,7 +43,7 @@ export function TableScreen() {
   const [hostSheetOpen, setHostSheetOpen] = useState(false);
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const [fatalError, setFatalError] = useState(null);
-  const { state, status, nextHandAt, error, kicked, clearError, sendAction, hostSetBlinds, hostResetGame, hostKickPlayer } = socket;
+  const { state, status, nextHandAt, error, kicked, clearError, sendAction, hostSetBlinds, hostSetGameOptions, hostResetGame, hostKickPlayer } = socket;
 
   useEffect(() => {
     if (!error) return;
@@ -112,6 +112,7 @@ export function TableScreen() {
         table={state}
         myPlayerId={profile.playerId}
         onSetBlinds={hostSetBlinds}
+        onSetGameOptions={hostSetGameOptions}
         onResetGame={hostResetGame}
         onKickPlayer={hostKickPlayer}
       />

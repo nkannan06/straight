@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { IconChevronLeft, IconMinus, IconPlus, IconShare, IconCopy } from '../components/icons.jsx';
 import { useToast } from '../components/Toast.jsx';
 import { useProfile } from '../hooks/useProfile.js';
+import { Toggle } from '../components/Toggle.jsx';
 import { createRoom } from '../lib/api.js';
 import { parseDollarsToCents, formatMoney } from '../lib/money.js';
 import { BLIND_PRESETS } from '../lib/blindPresets.js';
@@ -19,6 +20,8 @@ export function CreateGameScreen() {
   const [customBig, setCustomBig] = useState('2');
   const [stackCents, setStackCents] = useState(100_000); // $1,000
   const [tableSize, setTableSize] = useState(6);
+  const [bounty27Enabled, setBounty27Enabled] = useState(false);
+  const [rabbitHuntEnabled, setRabbitHuntEnabled] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createdCode, setCreatedCode] = useState(null);
 
@@ -54,7 +57,13 @@ export function CreateGameScreen() {
     if (!canCreate) return;
     setCreating(true);
     try {
-      const { code } = await createRoom({ maxSeats: tableSize, blinds: { small: blinds.small, big: blinds.big }, startingStack: stackCents });
+      const { code } = await createRoom({
+        maxSeats: tableSize,
+        blinds: { small: blinds.small, big: blinds.big },
+        startingStack: stackCents,
+        bounty27Enabled,
+        rabbitHuntEnabled,
+      });
       setCreatedCode(code);
       localStorage.setItem('straight.lastRoom', JSON.stringify({ code, name: `${profile.name}'s Game` }));
     } catch {
@@ -208,6 +217,30 @@ export function CreateGameScreen() {
                 {n}
               </button>
             ))}
+          </div>
+        </section>
+
+        <section className="mt-6">
+          <h2 className="mb-2 font-sans text-caption uppercase tracking-[0.06em] text-text-tertiary">Game Modes</h2>
+          <div className="flex flex-col divide-y divide-white/5 rounded-card border border-white/10 bg-bg-elevated px-4">
+            <div className="flex items-center justify-between py-3.5">
+              <div className="pr-3">
+                <p className="font-sans text-body text-text-primary">2-7 Bounty</p>
+                <p className="mt-0.5 font-sans text-[12px] text-text-tertiary">
+                  Win a hand holding 2-7 offsuit and every other player pays you 2 big blinds.
+                </p>
+              </div>
+              <Toggle checked={bounty27Enabled} onChange={setBounty27Enabled} label="2-7 Bounty" />
+            </div>
+            <div className="flex items-center justify-between py-3.5">
+              <div className="pr-3">
+                <p className="font-sans text-body text-text-primary">Rabbit Hunt</p>
+                <p className="mt-0.5 font-sans text-[12px] text-text-tertiary">
+                  If a hand ends early on a fold, reveal what the rest of the board would have been.
+                </p>
+              </div>
+              <Toggle checked={rabbitHuntEnabled} onChange={setRabbitHuntEnabled} label="Rabbit Hunt" />
+            </div>
           </div>
         </section>
 

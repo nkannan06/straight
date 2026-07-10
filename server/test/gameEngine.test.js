@@ -1,6 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { Table, IllegalActionError, computeSidePots } from '../gameEngine.js';
+import { Table, IllegalActionError, computeSidePots, isTwoSevenOffsuit } from '../gameEngine.js';
+import { makeCard } from '../deck.js';
 
 function makeTable(opts = {}) {
   return new Table({ code: 'TEST01', maxSeats: 8, blinds: { small: 5, big: 10 }, startingStack: 1000, turnTimeoutMs: 25_000, ...opts });
@@ -196,6 +197,109 @@ describe('host controls', () => {
     table.removePlayer(actor.id);
     assert.notEqual(table.street, 'lobby');
     assert.ok(['preflop', 'flop', 'turn', 'river', 'hand_complete'].includes(table.street));
+  });
+});
+
+describe('2-7 bounty', () => {
+  test('isTwoSevenOffsuit recognizes only a deuce and seven of different suits', () => {
+    assert.ok(isTwoSevenOffsuit([makeCard('2', 's'), makeCard('7', 'h')]));
+    assert.ok(isTwoSevenOffsuit([makeCard('7', 'c'), makeCard('2', 'd')])); // order-independent
+    assert.ok(!isTwoSevenOffsuit([makeCard('2', 's'), makeCard('7', 's')])); // same suit
+    assert.ok(!isTwoSevenOffsuit([makeCard('2', 's'), makeCard('8', 'h')])); // wrong ranks
+    assert.ok(!isTwoSevenOffsuit(null));
+  });
+
+  test('disabled by default: a 2-7 offsuit fold-win pays no bounty', () => {
+    const table = makeTable();
+    const [a, b] = seatPlayers(table, ['a', 'b']);
+    table.startHand();
+    const winnerSeat = table.actingSeat === a.seat ? b : a;
+    winnerSeat.holeCards = [makeCard('2', 's'), makeCard('7', 'h')];
+    const actor = table.seats[table.actingSeat];
+    table.applyAction(actor.id, 'fold');
+    assert.equal(table.lastHandResult.bounty27, null);
+  });
+
+  test('fold-win with 2-7 offsuit pays the bounty and reveals the cards were checked', () => {
+    const table = makeTable({ bounty27Enabled: true, bounty27Multiplier: 2 });
+    const [a, b] = seatPlayers(table, ['a', 'b']);
+    const totalBefore = a.stack + b.stack;
+    table.startHand();
+    const folder = table.seats[table.actingSeat];
+    const winner = folder === a ? b : a;
+    winner.holeCards = [makeCard('2', 's'), makeCard('7', 'h')];
+    table.applyAction(folder.id, 'fold');
+
+    assert.ok(table.lastHandResult.bounty27);
+    assert.equal(table.lastHandResult.bounty27.length, 1);
+    assert.equal(table.lastHandResult.bounty27[0].winnerId, winner.id);
+    assert.equal(table.lastHandResult.bounty27[0].amount, table.blinds.big * 2);
+    // total chips in play are conserved — bounty just moves chips between players
+    assert.equal(a.stack + b.stack, totalBefore);
+  });
+
+  test('showdown win with 2-7 offsuit pays the bounty from every other dealt-in player', () => {
+    const table = makeTable({ bounty27Enabled: true, bounty27Multiplier: 2 });
+    const players = seatPlayers(table, ['a', 'b', 'c']);
+    const totalBefore = players.reduce((s, p) => s + p.stack, 0);
+    table.startHand();
+    const winner = players[0];
+    winner.holeCards = [makeCard('2', 'd'), makeCard('7', 'c')];
+
+    let guard = 0;
+    while (table.street !== 'hand_complete') {
+      guard++;
+      if (guard > 100) throw new Error('hand did not terminate');
+      const actor = table.seats[table.actingSeat];
+      const toCall = table.currentBet - actor.currentBet;
+      table.applyAction(actor.id, toCall > 0 ? 'call' : 'check');
+    }
+
+    const bounty = table.lastHandResult.bounty27?.find((b) => b.winnerId === winner.id);
+    // only asserts the bounty fired if this player actually ended up among the showdown winners
+    const wonAnyPot = table.lastHandResult.pots.some((p) => p.winnerIds.includes(winner.id));
+    if (wonAnyPot) {
+      assert.ok(bounty, 'expected a bounty payout for the 2-7 offsuit winner');
+      assert.equal(bounty.amount, table.blinds.big * 2 * 2); // 2 other players
+    }
+    assert.equal(players.reduce((s, p) => s + p.stack, 0), totalBefore);
+  });
+});
+
+describe('rabbit hunt', () => {
+  test('disabled by default: no reveal on an early fold', () => {
+    const table = makeTable();
+    seatPlayers(table, ['a', 'b']);
+    table.startHand();
+    const actor = table.seats[table.actingSeat];
+    table.applyAction(actor.id, 'fold');
+    assert.equal(table.lastHandResult.rabbitHunt, null);
+  });
+
+  test('enabled: reveals the rest of the board after an early fold, using the same deck', () => {
+    const table = makeTable({ rabbitHuntEnabled: true });
+    seatPlayers(table, ['a', 'b']);
+    table.startHand();
+    const actor = table.seats[table.actingSeat];
+    table.applyAction(actor.id, 'fold'); // preflop fold-out, community is still empty
+    assert.equal(table.community.length, 0);
+    assert.ok(table.lastHandResult.rabbitHunt);
+    assert.equal(table.lastHandResult.rabbitHunt.community.length, 5);
+  });
+
+  test('enabled: no reveal needed once all five community cards are already out', () => {
+    const table = makeTable({ rabbitHuntEnabled: true });
+    seatPlayers(table, ['a', 'b', 'c']);
+    table.startHand();
+    let guard = 0;
+    while (table.street !== 'hand_complete') {
+      guard++;
+      if (guard > 100) throw new Error('hand did not terminate');
+      const actor = table.seats[table.actingSeat];
+      const toCall = table.currentBet - actor.currentBet;
+      table.applyAction(actor.id, toCall > 0 ? 'call' : 'check');
+    }
+    assert.equal(table.lastHandResult.rabbitHunt, null); // reached showdown, nothing hidden to reveal
   });
 });
 

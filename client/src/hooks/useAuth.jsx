@@ -65,17 +65,24 @@ function useAuthState() {
   }, []);
 
   const continueWithApple = useCallback(async () => {
-    const u = await continueWithAppleRequest();
+    const { user: u, isNewUser } = await continueWithAppleRequest();
     setUser(u);
-    setStatus('authed');
+    setStatus(isNewUser ? 'needs-username' : 'authed');
     return u;
   }, []);
 
   const continueWithGoogle = useCallback(async () => {
-    const u = await continueWithGoogleRequest();
+    const { user: u, isNewUser } = await continueWithGoogleRequest();
     setUser(u);
-    setStatus('authed');
+    setStatus(isNewUser ? 'needs-username' : 'authed');
     return u;
+  }, []);
+
+  // Called once the post-SSO-signup username picker screen is dismissed
+  // (either the user chose a custom username or kept the auto-generated
+  // one) — transitions out of the 'needs-username' gate into the app.
+  const finishOnboarding = useCallback(() => {
+    setStatus('authed');
   }, []);
 
   const logOut = useCallback(async () => {
@@ -104,7 +111,7 @@ function useAuthState() {
     return saved;
   }, []);
 
-  return { status, user, signUp, logIn, continueWithApple, continueWithGoogle, logOut, claimUsername, updateDisplayName };
+  return { status, user, signUp, logIn, continueWithApple, continueWithGoogle, logOut, claimUsername, updateDisplayName, finishOnboarding };
 }
 
 export function AuthProvider({ children }) {

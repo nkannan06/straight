@@ -5,6 +5,7 @@ import { ToastProvider } from './components/Toast.jsx';
 import { AuthProvider, useAuth } from './hooks/useAuth.jsx';
 import { initPushNotifications } from './lib/push.js';
 import { AuthScreen } from './screens/AuthScreen.jsx';
+import { UsernameSetupScreen } from './screens/UsernameSetupScreen.jsx';
 import { SequenceLogo } from './components/SequenceLogo.jsx';
 import { TabShell } from './components/TabShell.jsx';
 import { HomeScreen } from './screens/HomeScreen.jsx';
@@ -71,6 +72,10 @@ function AppShell() {
 
   if (auth.status === 'anon') {
     return <AuthScreen />;
+  }
+
+  if (auth.status === 'needs-username') {
+    return <UsernameSetupScreen />;
   }
 
   return (

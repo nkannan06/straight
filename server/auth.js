@@ -96,17 +96,19 @@ export function logIn({ email, password }) {
 
 // Shared by both social providers: find the account already linked to this
 // provider's subject id, else link to a matching email/password account,
-// else create a brand-new account.
+// else create a brand-new account. isNewUser is true only for the last case
+// — it drives whether the client prompts for an explicit username choice
+// instead of silently keeping the auto-generated one.
 function findOrCreateSocialUser({ column, sub, email, displayName }) {
   let row = db.prepare(`SELECT * FROM users WHERE ${column} = ?`).get(sub);
-  if (row) return row;
+  if (row) return { user: row, isNewUser: false };
 
   const normalizedEmail = email ? email.trim().toLowerCase() : null;
   if (normalizedEmail) {
     row = db.prepare('SELECT * FROM users WHERE email = ?').get(normalizedEmail);
     if (row) {
       db.prepare(`UPDATE users SET ${column} = ? WHERE id = ?`).run(sub, row.id);
-      return { ...row, [column]: sub };
+      return { user: { ...row, [column]: sub }, isNewUser: false };
     }
   }
 
@@ -116,7 +118,8 @@ function findOrCreateSocialUser({ column, sub, email, displayName }) {
   db.prepare(
     `INSERT INTO users (id, username, display_name, email, ${column}, created_at) VALUES (?, ?, ?, ?, ?, ?)`
   ).run(id, username, displayName || username, normalizedEmail, sub, ts);
-  return { id, username, display_name: displayName || username, email: normalizedEmail, created_at: ts, last_seen_at: null, current_room_code: null };
+  const user = { id, username, display_name: displayName || username, email: normalizedEmail, created_at: ts, last_seen_at: null, current_room_code: null };
+  return { user, isNewUser: true };
 }
 
 export async function signInWithApple({ identityToken, displayName }) {
@@ -127,9 +130,9 @@ export async function signInWithApple({ identityToken, displayName }) {
   } catch {
     throw new AuthError('Could not verify Sign in with Apple', 401);
   }
-  const user = findOrCreateSocialUser({ column: 'apple_sub', sub: payload.sub, email: payload.email, displayName });
+  const { user, isNewUser } = findOrCreateSocialUser({ column: 'apple_sub', sub: payload.sub, email: payload.email, displayName });
   const token = createSession(user.id);
-  return { token, user: publicUser(user) };
+  return { token, user: publicUser(user), isNewUser };
 }
 
 export async function signInWithGoogle({ idToken }) {
@@ -141,9 +144,9 @@ export async function signInWithGoogle({ idToken }) {
   } catch {
     throw new AuthError('Could not verify Google sign-in', 401);
   }
-  const user = findOrCreateSocialUser({ column: 'google_sub', sub: payload.sub, email: payload.email, displayName: payload.name });
+  const { user, isNewUser } = findOrCreateSocialUser({ column: 'google_sub', sub: payload.sub, email: payload.email, displayName: payload.name });
   const token = createSession(user.id);
-  return { token, user: publicUser(user) };
+  return { token, user: publicUser(user), isNewUser };
 }
 
 export function logOut(token) {

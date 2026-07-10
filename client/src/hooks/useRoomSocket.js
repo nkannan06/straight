@@ -86,6 +86,7 @@ export function useRoomSocket({ code, playerId, name }) {
   const hostStartGame = useCallback(() => send({ type: 'host_start_game' }), [send]);
   const hostResetGame = useCallback(() => send({ type: 'host_reset_game' }), [send]);
   const hostSetBlinds = useCallback((blinds) => send({ type: 'host_set_blinds', blinds }), [send]);
+  const hostSetGameOptions = useCallback((options) => send({ type: 'host_set_game_options', ...options }), [send]);
   const hostKickPlayer = useCallback((targetPlayerId) => send({ type: 'host_kick_player', targetPlayerId }), [send]);
 
   return {
@@ -99,6 +100,7 @@ export function useRoomSocket({ code, playerId, name }) {
     hostStartGame,
     hostResetGame,
     hostSetBlinds,
+    hostSetGameOptions,
     hostKickPlayer,
   };
 }

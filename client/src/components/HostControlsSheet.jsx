@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Sheet } from './Sheet.jsx';
+import { Toggle } from './Toggle.jsx';
 import { parseDollarsToCents, centsToDollarInputString } from '../lib/money.js';
 import { BLIND_PRESETS } from '../lib/blindPresets.js';
 
-export function HostControlsSheet({ open, onClose, table, myPlayerId, onSetBlinds, onResetGame, onKickPlayer }) {
+export function HostControlsSheet({ open, onClose, table, myPlayerId, onSetBlinds, onSetGameOptions, onResetGame, onKickPlayer }) {
   const [confirmingKickId, setConfirmingKickId] = useState(null);
   const [confirmingReset, setConfirmingReset] = useState(false);
   const [customMode, setCustomMode] = useState(false);
@@ -120,6 +121,28 @@ export function HostControlsSheet({ open, onClose, table, myPlayerId, onSetBlind
             </button>
           </div>
         )}
+      </section>
+
+      <section className="mb-5">
+        <h3 className="mb-2 font-sans text-caption uppercase tracking-[0.06em] text-text-tertiary">Game Modes</h3>
+        <div className="flex flex-col divide-y divide-white/5 rounded-btn border border-white/10 px-3">
+          <div className="flex items-center justify-between py-3">
+            <span className="font-sans text-body text-text-primary">2-7 Bounty</span>
+            <Toggle
+              checked={!!table.bounty27Enabled}
+              onChange={(v) => onSetGameOptions({ bounty27Enabled: v })}
+              label="2-7 Bounty"
+            />
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <span className="font-sans text-body text-text-primary">Rabbit Hunt</span>
+            <Toggle
+              checked={!!table.rabbitHuntEnabled}
+              onChange={(v) => onSetGameOptions({ rabbitHuntEnabled: v })}
+              label="Rabbit Hunt"
+            />
+          </div>
+        </div>
       </section>
 
       <section className="mb-5">

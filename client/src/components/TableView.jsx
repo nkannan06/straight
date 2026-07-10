@@ -111,6 +111,18 @@ export function TableView({
       <div className="mt-4 flex flex-col items-center gap-3">
         <PotDisplay total={potTotal(state)} />
         <CommunityCards community={state.community} />
+        {handComplete && result?.rabbitHunt && (
+          <div className="flex flex-col items-center gap-1.5">
+            <span className="font-sans text-[11px] uppercase tracking-[0.06em] text-text-tertiary">
+              🐇 Rabbit hunt — the rest of the board
+            </span>
+            <div className="flex gap-1.5">
+              {result.rabbitHunt.community.slice(state.community.length).map((c, i) => (
+                <PlayingCard key={i} card={c} size="sm" animate={false} />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {!handComplete && <div className="mt-3"><ActionLog entries={state.actionLog} nameById={nameById} /></div>}
@@ -128,6 +140,32 @@ export function TableView({
                     .join(' · ')
                 : 'Hand complete'}
             </p>
+            {result?.bounty27?.length > 0 && (
+              <p className="mt-1 font-sans text-[13px] font-semibold text-accent-gold">
+                {result.bounty27
+                  .map((b) => `🎯 ${nameById.get(b.winnerId) || '?'} hits the 2-7 bounty! +${formatMoney(b.amount)}`)
+                  .join(' · ')}
+              </p>
+            )}
+            {result?.wonWithoutShowdown && result.bounty27?.length > 0 && (
+              <div className="mt-4 flex justify-center gap-4">
+                {result.bounty27.map((b) => {
+                  const seat = state.seats.find((s) => s && s.id === b.winnerId);
+                  if (!seat?.holeCards) return null;
+                  return (
+                    <div key={b.winnerId} className="flex flex-col items-center gap-1.5">
+                      <span className="font-sans text-[12px] text-text-secondary">{nameById.get(b.winnerId)}</span>
+                      <div className="flex gap-1">
+                        {seat.holeCards.map((c, i) => (
+                          <PlayingCard key={i} card={c} size="sm" animate={false} />
+                        ))}
+                      </div>
+                      <span className="font-sans text-[11px] uppercase tracking-[0.06em] text-text-tertiary">2-7 offsuit</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {result && !result.wonWithoutShowdown && (
               <div className="mt-4 flex justify-center gap-4">
                 {result.showdownHands.map((h) => (

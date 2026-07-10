@@ -18,7 +18,7 @@ export function LobbyScreen() {
   const socket = useRoomSocket({ code, playerId: profile.playerId, name: profile.name });
   const [hostSheetOpen, setHostSheetOpen] = useState(false);
 
-  const { state, status, error, kicked, clearError, hostStartGame, hostSetBlinds, hostResetGame, hostKickPlayer } = socket;
+  const { state, status, error, kicked, clearError, hostStartGame, hostSetBlinds, hostSetGameOptions, hostResetGame, hostKickPlayer } = socket;
   const isHost = state?.hostId === profile.playerId;
   const players = state ? state.seats.filter(Boolean) : [];
   const [fatalError, setFatalError] = useState(null);
@@ -201,6 +201,7 @@ export function LobbyScreen() {
         table={state}
         myPlayerId={profile.playerId}
         onSetBlinds={hostSetBlinds}
+        onSetGameOptions={hostSetGameOptions}
         onResetGame={hostResetGame}
         onKickPlayer={hostKickPlayer}
       />
