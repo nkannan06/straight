@@ -8,7 +8,14 @@ import { SERVER_HTTP_URL } from './config.js';
 // already-live /api/push endpoints, so nothing here needs to change once
 // credentials land; only server/push.js's send function does.
 
-let started = false;
+// Listeners must only be attached once (attaching twice would double-fire
+// every event), but the actual permission/register call must NOT be gated
+// the same way — if the very first attempt in this app session failed for
+// any reason (permission dismissed, missing capability, transient APNs
+// hiccup), a "run once" guard around the whole function would silently
+// block every retry until the app is fully force-quit and relaunched, even
+// across sign-out/sign-in. So only the listener attachment is one-shot.
+let listenersAdded = false;
 
 async function registerToken(token) {
   const authToken = getToken();
@@ -21,10 +28,20 @@ async function registerToken(token) {
 }
 
 export async function initPushNotifications({ onNotificationTap } = {}) {
-  if (started || !Capacitor.isNativePlatform()) return;
-  started = true;
+  if (!Capacitor.isNativePlatform()) return;
 
   const { PushNotifications } = await import('@capacitor/push-notifications');
+
+  if (!listenersAdded) {
+    listenersAdded = true;
+    PushNotifications.addListener('registration', (token) => registerToken(token.value));
+    PushNotifications.addListener('registrationError', (err) => {
+      console.error('[push] registration failed', err);
+    });
+    PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+      onNotificationTap?.(action.notification?.data);
+    });
+  }
 
   const permission = await PushNotifications.checkPermissions();
   if (permission.receive !== 'granted') {
@@ -32,13 +49,8 @@ export async function initPushNotifications({ onNotificationTap } = {}) {
     if (requested.receive !== 'granted') return;
   }
 
+  // Safe to call every time initPushNotifications runs (e.g. every sign-in)
+  // — re-registering for remote notifications is a normal, idempotent iOS
+  // operation, not something that needs its own guard.
   await PushNotifications.register();
-
-  PushNotifications.addListener('registration', (token) => registerToken(token.value));
-  PushNotifications.addListener('registrationError', (err) => {
-    console.error('[push] registration failed', err);
-  });
-  PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-    onNotificationTap?.(action.notification?.data);
-  });
 }

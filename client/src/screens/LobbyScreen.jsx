@@ -109,20 +109,27 @@ export function LobbyScreen() {
         )}
       </div>
 
-      <div className="mt-4 flex items-center justify-between rounded-card border border-white/10 bg-bg-elevated px-4 py-4">
-        <div>
-          <h2 className="font-display text-headline text-text-primary">{hostPlayer?.name}'s Game</h2>
-          <p className="mt-0.5 font-sans text-subheadline text-text-secondary">
-            {formatMoney(state.blinds.small)}/{formatMoney(state.blinds.big)} · {formatMoney(state.startingStack)} buy-in · {state.maxSeats} seats
-          </p>
+      <div className="mt-4 rounded-card border border-white/10 bg-bg-elevated px-4 py-4">
+        <h2 className="font-display text-headline text-text-primary">{hostPlayer?.name}'s Game</h2>
+
+        <div className="mt-3 flex items-center justify-between gap-3 rounded-btn border border-accent-gold/30 bg-bg-elevated-2 px-3 py-2.5">
+          <div>
+            <span className="font-sans text-caption uppercase tracking-[0.06em] text-text-tertiary">Code</span>
+            <p className="tabular-money font-display text-title text-accent-gold">{code}</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleShare}
+            className="flex items-center gap-2 rounded-btn bg-accent-gold px-4 py-2.5 font-sans text-body font-semibold text-text-on-ivory active:scale-[0.98]"
+          >
+            <IconShare className="h-4 w-4" />
+            Share
+          </button>
         </div>
-        <button type="button" onClick={handleShare} className="flex flex-col items-end gap-1 text-right">
-          <span className="font-sans text-caption uppercase tracking-[0.06em] text-text-tertiary">Code</span>
-          <span className="tabular-money flex items-center gap-1.5 font-display text-headline text-accent-gold">
-            {code}
-            <IconShare className="h-3.5 w-3.5" />
-          </span>
-        </button>
+
+        <p className="mt-3 font-sans text-subheadline text-text-secondary">
+          {formatMoney(state.blinds.small)}/{formatMoney(state.blinds.big)} · {formatMoney(state.startingStack)} buy-in · {state.maxSeats} seats
+        </p>
       </div>
 
       <div className="mt-6 flex items-center justify-between">
