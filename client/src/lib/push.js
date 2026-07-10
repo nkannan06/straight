@@ -19,12 +19,24 @@ let listenersAdded = false;
 
 async function registerToken(token) {
   const authToken = getToken();
-  if (!authToken) return;
-  await fetch(`${SERVER_HTTP_URL}/api/push/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
-    body: JSON.stringify({ platform: Capacitor.getPlatform(), token }),
-  }).catch(() => {});
+  if (!authToken) {
+    console.error('[push] got a device token but no auth token yet — cannot register it');
+    return;
+  }
+  try {
+    const res = await fetch(`${SERVER_HTTP_URL}/api/push/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${authToken}` },
+      body: JSON.stringify({ platform: Capacitor.getPlatform(), token }),
+    });
+    if (!res.ok) {
+      console.error('[push] server rejected device token registration:', res.status, await res.text().catch(() => ''));
+      return;
+    }
+    console.log('[push] device token registered with server');
+  } catch (err) {
+    console.error('[push] network error registering device token:', err.message);
+  }
 }
 
 export async function initPushNotifications({ onNotificationTap } = {}) {
