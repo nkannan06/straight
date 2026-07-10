@@ -11,7 +11,7 @@ import { recordSession, getSession, listSessionsForUser, friendBalances, allTime
 import { scheduleGame, respondToInvite, listUpcomingForUser } from './schedule.js';
 import { recordHandFromTableState, listHandHistory, getHand, handStats } from './handHistory.js';
 import { ACHIEVEMENTS, unlockedFor, checkSessionAchievements } from './achievements.js';
-import { registerDeviceToken, unregisterDeviceToken, sendPushNotification } from './push.js';
+import { registerDeviceToken, unregisterDeviceToken, sendPushNotification, registeredTokensFor, isPushConfigured } from './push.js';
 
 const PORT = process.env.PORT || 8787;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I — easy to read aloud
@@ -210,6 +210,19 @@ app.get('/api/rooms/:code', (req, res) => {
 });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+// Temporary diagnostic — remove once push notifications are confirmed
+// working end to end. Reports whether a device token is registered and
+// whether the server has real APNs credentials configured, without
+// exposing the token itself.
+app.get('/api/debug/push-status/:userId', (req, res) => {
+  const tokens = registeredTokensFor(req.params.userId);
+  res.json({
+    deviceTokenCount: tokens.length,
+    platforms: tokens.map((t) => t.platform),
+    pushConfigured: isPushConfigured(),
+  });
+});
 
 // ---- Users ----
 
