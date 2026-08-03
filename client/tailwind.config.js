@@ -55,7 +55,13 @@ export default {
         'glow-gold': '0 0 20px rgba(224,185,92,0.35)',
       },
       maxWidth: {
-        phone: '390px',
+        // Only there to keep the layout phone-shaped on desktop/iPad — it must
+        // stay comfortably above every real iPhone's logical width or the
+        // centered .app-frame leaves the black body showing as strips down
+        // both edges. 390px did exactly that on anything wider than an
+        // iPhone 16 (402pt on a 16 Pro, 440pt on a 16 Pro Max); the extra
+        // headroom here also absorbs whatever the next Pro Max turns out to be.
+        phone: '480px',
       },
     },
   },
