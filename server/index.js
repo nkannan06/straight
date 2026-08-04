@@ -12,6 +12,7 @@ import { scheduleGame, respondToInvite, listUpcomingForUser } from './schedule.j
 import { recordHandFromTableState, listHandHistory, getHand, handStats } from './handHistory.js';
 import { ACHIEVEMENTS, unlockedFor, checkSessionAchievements } from './achievements.js';
 import { registerDeviceToken, unregisterDeviceToken, sendPushNotification } from './push.js';
+import { privacyPageHtml } from './privacyPage.js';
 
 const PORT = process.env.PORT || 8787;
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // no 0/O/1/I — easy to read aloud
@@ -221,6 +222,10 @@ app.get('/api/rooms/:code', (req, res) => {
 });
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+// Public, unauthenticated by design: App Store Connect and Sign in with
+// Apple both require this URL to be reachable without signing in first.
+app.get('/privacy', (_req, res) => res.type('html').send(privacyPageHtml));
 
 // ---- Users ----
 
