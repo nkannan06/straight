@@ -24,6 +24,12 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- Only HTTPS/WSS via iOS's built-in TLS, plus one SHA256 hash for a
+	     Google Sign-In auth nonce -- both exempt (standard OS-provided
+	     transport encryption, and hashing limited to authentication). This
+	     skips the export-compliance prompt on every future upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
